@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KHANAGO TRAVEL EXPENSE TRACKER</title>
-    <script src="https://apis.google.com/js/api.js"></script> 
+    <script src="https://apis.google.com/js/api.js"></script>
     <style>
         /* CSS for KHANAGO Branding and Layout */
         @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;700&display=swap');
         
         :root {
-            --khanago-orange: #FF8C00;
+            --khanago-orange: #FF8C00; /* Main Brand Color */
             --text-color: #333;
-            --bg-color: #f4f4f4;
+            --bg-color: #f0f0f0; /* Slightly off-white background for contrast */
             --pending-red: #d9534f;
             --approved-green: #5cb85c;
+            --border-color: #ccc;
         }
 
         body {
@@ -24,17 +25,18 @@
             padding: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Align to top instead of center for better viewing */
             min-height: 100vh;
+            padding-top: 50px; /* Space from the top */
         }
 
         .container {
             background-color: white;
             padding: 40px;
             border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 450px;
+            max-width: 400px; /* Slightly narrower for a cleaner look */
             text-align: center;
             text-transform: uppercase;
         }
@@ -42,18 +44,19 @@
         h1 {
             color: var(--khanago-orange);
             margin-bottom: 30px;
-            font-size: 1.8em;
+            font-size: 1.6em; /* Slightly smaller header */
             font-weight: 700;
+            line-height: 1.2;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px; /* Increased spacing */
             text-align: left;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: var(--text-color);
             font-weight: bold;
             font-size: 0.9em;
@@ -63,18 +66,26 @@
         input[type="number"],
         select {
             width: 100%;
-            padding: 10px;
-            border: 2px solid #ccc;
+            padding: 12px;
+            border: 1px solid var(--border-color);
             border-radius: 5px;
             box-sizing: border-box;
             font-size: 1em;
             text-transform: uppercase;
             font-family: 'Calibri', Arial, sans-serif;
+            transition: border-color 0.3s;
         }
         
         input:focus, select:focus {
             border-color: var(--khanago-orange);
+            box-shadow: 0 0 0 1px var(--khanago-orange);
             outline: none;
+        }
+        
+        #rateDisplay {
+            font-size: 0.8em;
+            color: gray;
+            margin-top: 5px;
         }
 
         .result-box {
@@ -82,107 +93,107 @@
             color: white;
             padding: 15px;
             border-radius: 5px;
-            margin-top: 30px;
+            margin-top: 20px;
             font-size: 1.2em;
             font-weight: bold;
             display: none;
         }
         
         .status-box {
-            margin-top: 15px;
-            padding: 10px;
+            margin-top: 25px;
+            padding: 12px;
             border-radius: 5px;
             font-weight: bold;
-            font-size: 1.1em;
+            font-size: 1em;
         }
         
         #statusDisplay.pending {
-            background-color: #f2dede;
+            background-color: #fef4f4;
             color: var(--pending-red);
             border: 1px solid var(--pending-red);
         }
         
         #statusDisplay.approved {
-            background-color: #d9edf7;
+            background-color: #f4fff4;
             color: var(--approved-green);
             border: 1px solid var(--approved-green);
         }
         
-        .submit-btn {
-            background-color: var(--khanago-orange);
-            color: white;
-            padding: 15px 25px;
+        .submit-btn, .approve-btn, .modal-content button {
+            transition: background-color 0.3s;
+            cursor: pointer;
+            padding: 12px;
             border: none;
             border-radius: 5px;
-            cursor: pointer;
             font-size: 1em;
             font-weight: bold;
-            margin-top: 20px;
             width: 100%;
             text-transform: uppercase;
             font-family: 'Calibri', Arial, sans-serif;
+            color: white;
+        }
+
+        .submit-btn {
+            background-color: var(--khanago-orange);
+            margin-top: 25px;
+        }
+        
+        .submit-btn:hover {
+            background-color: #e57e00; /* Darker orange on hover */
         }
         
         .approve-btn {
             background-color: var(--approved-green);
-            color: white;
-            padding: 15px 25px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-            margin-top: 10px; /* Reduced margin to fit below submit */
-            width: 100%;
-            text-transform: uppercase;
-            font-family: 'Calibri', Arial, sans-serif;
+            margin-top: 15px;
+        }
+        
+        .approve-btn:hover {
+            background-color: #4cae4c; /* Darker green on hover */
         }
 
         /* --- MODAL LOGIN BOX CSS --- */
         .modal {
             display: none; 
             position: fixed; 
-            z-index: 1; 
+            z-index: 10; /* Higher z-index to ensure it sits on top */
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             overflow: auto; 
-            background-color: rgba(0,0,0,0.4);
+            background-color: rgba(0,0,0,0.6); /* Darker overlay */
         }
 
         .modal-content {
             background-color: #fefefe;
-            margin: 15% auto; 
-            padding: 25px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 300px;
+            margin: 10% auto; /* Move higher up */
+            padding: 30px;
             border-radius: 8px;
+            width: 90%;
+            max-width: 300px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+        }
+        
+        .modal-content h2 {
+            color: var(--khanago-orange);
+            margin-top: 0;
+            font-size: 1.5em;
         }
         
         .modal-content input {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .modal-content button {
             background-color: var(--khanago-orange);
-            padding: 10px;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            font-family: 'Calibri', Arial, sans-serif;
-            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>KHANAGO TRAVEL EXPENSE TRACKER</h1>
+    <h1>KHANAGO<br>TRAVEL EXPENSE TRACKER</h1>
 
     <div class="form-group">
         <label for="expenseDate">DATE</label>
@@ -248,7 +259,6 @@
 
 <script>
     // --- CONFIGURATION ---
-    // YOUR WEB APP URL IS NOW HARDCODED HERE
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBVv7ow4VvI8RlESX0jYfb_yMrFdfHje-4kjpgUvppzE6cG_29506dfoykEmlYK8REg/exec'; 
 
     // --- JS for Calculation and Submission ---
@@ -348,7 +358,6 @@
         }
         
         // Call the Google Script 'approveExpense' function
-        // This requires the <script src="https://apis.google.com/js/api.js"></script> tag
         google.script.run
             .withSuccessHandler(onApprovalSuccess)
             .withFailureHandler(onApprovalFailure)
@@ -369,10 +378,8 @@
             statusBox.classList.add('approved');
             alert(response.message);
         } else if (response.status === 'WARNING') {
-            // Handles cases like "already approved" or "data not found"
             alert(`WARNING: ${response.message}`);
         } else {
-            // This handles authentication failure (Incorrect ID/Password)
             alert(`ERROR: ${response.message}`);
         }
     }

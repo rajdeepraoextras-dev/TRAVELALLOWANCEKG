@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KHANAGO TRAVEL EXPENSE TRACKER</title>
+    <script src="https://apis.google.com/js/api.js"></script> 
     <style>
         /* CSS for KHANAGO Branding and Layout */
-        @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;700&display=swap'); /* Importing Calibri-like font if not locally available */
+        @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;700&display=swap');
         
         :root {
             --khanago-orange: #FF8C00;
@@ -107,6 +108,21 @@
             border: 1px solid var(--approved-green);
         }
         
+        .submit-btn {
+            background-color: var(--khanago-orange);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            margin-top: 20px;
+            width: 100%;
+            text-transform: uppercase;
+            font-family: 'Calibri', Arial, sans-serif;
+        }
+        
         .approve-btn {
             background-color: var(--approved-green);
             color: white;
@@ -116,7 +132,7 @@
             cursor: pointer;
             font-size: 1em;
             font-weight: bold;
-            margin-top: 20px;
+            margin-top: 10px; /* Reduced margin to fit below submit */
             width: 100%;
             text-transform: uppercase;
             font-family: 'Calibri', Arial, sans-serif;
@@ -158,6 +174,8 @@
             border: none;
             cursor: pointer;
             border-radius: 5px;
+            font-family: 'Calibri', Arial, sans-serif;
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -175,7 +193,7 @@
         <label for="employeeName">EMPLOYEE NAME</label>
         <select id="employeeName" required>
             <option value="SANDEEP GOND" selected>SANDEEP GOND</option>
-        </select>
+            </select>
     </div>
 
     <div class="form-group">
@@ -192,6 +210,18 @@
     <div id="finalAmount" class="result-box">
         TOTAL AMOUNT: ₹0.00
     </div>
+    
+    <form id="expenseForm" action="https://script.google.com/macros/s/AKfycbwBVv7ow4VvI8RlESX0jYfb_yMrFdfHje-4kjpgUvppzE6cG_29506dfoykEmlYK8REg/exec" method="POST" target="no-target">
+        <input type="hidden" name="date" id="formDate">
+        <input type="hidden" name="name" id="formName">
+        <input type="hidden" name="km" id="formKm">
+        <input type="hidden" name="amount" id="formAmount">
+        
+        <button type="submit" id="submitButton" class="submit-btn" onclick="prepareAndSubmit(event)">
+            SUBMIT EXPENSE
+        </button>
+        <iframe name="no-target" style="display:none;"></iframe>
+    </form>
     
     <div id="statusDisplay" class="status-box pending">
         STATUS: PENDING
@@ -217,10 +247,11 @@
 
 
 <script>
+    // --- CONFIGURATION ---
+    // YOUR WEB APP URL IS NOW HARDCODED HERE
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBVv7ow4VvI8RlESX0jYfb_yMrFdfHje-4kjpgUvppzE6cG_29506dfoykEmlYK8REg/exec'; 
+
     // --- JS for Calculation and Submission ---
-    
-    const APPROVER_ID = '8003270534';
-    const APPROVER_PASS = '8003270534';
     
     document.addEventListener('DOMContentLoaded', () => {
         // Set today's date as default
@@ -243,6 +274,51 @@
         resultBox.style.display = km > 0 ? 'block' : 'none';
     }
     
+    // Prepare and Submit function to push data to Google Script
+    function prepareAndSubmit(event) {
+        event.preventDefault(); // Stop the default form submission
+        
+        calculateAmount(); 
+        
+        const km = parseFloat(document.getElementById('kmTravelled').value) || 0;
+        
+        if (km === 0) {
+            alert('PLEASE ENTER KM TRAVELLED TODAY.');
+            return;
+        }
+        
+        // 1. Map values to hidden fields
+        const rate = parseFloat(document.getElementById('ratePerKm').value) || 3;
+        const finalAmount = (km * rate).toFixed(2); 
+        
+        document.getElementById('formDate').value = document.getElementById('expenseDate').value;
+        document.getElementById('formName').value = document.getElementById('employeeName').value;
+        document.getElementById('formKm').value = km.toFixed(1);
+        document.getElementById('formAmount').value = finalAmount;
+
+        // Use the Fetch API to send data to the Google Script Web App
+        const formData = new FormData(document.getElementById('expenseForm'));
+        
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: formData,
+            mode: 'no-cors' // Required for cross-origin submission to GAS
+        })
+        .then(() => {
+            alert('EXPENSE SUBMITTED SUCCESSFULLY! STATUS: PENDING');
+            // Reset status display after submission
+            const statusBox = document.getElementById('statusDisplay');
+            statusBox.innerHTML = 'STATUS: PENDING';
+            statusBox.classList.remove('approved');
+            statusBox.classList.add('pending');
+        })
+        .catch(error => {
+            console.error('Submission Error:', error);
+            alert('ERROR SUBMITTING EXPENSE. CHECK CONSOLE.');
+        });
+    }
+
+
     // --- JS for Approval Logic ---
     
     function openApprovalModal() {
@@ -260,30 +336,49 @@
     function attemptApprovalLogin() {
         const id = document.getElementById('loginId').value.trim();
         const pass = document.getElementById('loginPassword').value.trim();
-        const statusBox = document.getElementById('statusDisplay');
         const modal = document.getElementById('approvalModal');
         
-        if (id === APPROVER_ID && pass === APPROVER_PASS) {
-            // SUCCESSFUL LOGIN
-            
-            // This is where you would normally send the status update to Google Sheets (backend)
-            
+        // Get the data that needs to be approved (Date and Employee Name)
+        const dateToApprove = document.getElementById('expenseDate').value;
+        const nameToApprove = document.getElementById('employeeName').value;
+        
+        if (!dateToApprove) {
+            alert('PLEASE SELECT A DATE FIRST.');
+            return;
+        }
+        
+        // Call the Google Script 'approveExpense' function
+        // This requires the <script src="https://apis.google.com/js/api.js"></script> tag
+        google.script.run
+            .withSuccessHandler(onApprovalSuccess)
+            .withFailureHandler(onApprovalFailure)
+            .approveExpense(id, pass, dateToApprove, nameToApprove);
+
+        // Reset modal inputs and close
+        document.getElementById('loginId').value = '';
+        document.getElementById('loginPassword').value = '';
+        modal.style.display = "none";
+    }
+
+    function onApprovalSuccess(response) {
+        const statusBox = document.getElementById('statusDisplay');
+        
+        if (response.status === 'OK') {
             statusBox.innerHTML = 'STATUS: APPROVED BY RAJDEEP RAO';
             statusBox.classList.remove('pending');
             statusBox.classList.add('approved');
-            
-            // Reset modal inputs and close
-            document.getElementById('loginId').value = '';
-            document.getElementById('loginPassword').value = '';
-            modal.style.display = "none";
-            
-            alert('EXPENSE SUCCESSFULLY APPROVED BY RAJDEEP RAO!');
+            alert(response.message);
+        } else if (response.status === 'WARNING') {
+            // Handles cases like "already approved" or "data not found"
+            alert(`WARNING: ${response.message}`);
         } else {
-            // FAILED LOGIN
-            alert('LOGIN FAILED. INCORRECT ID or PASSWORD.');
-            // Clear password field only
-            document.getElementById('loginPassword').value = '';
+            // This handles authentication failure (Incorrect ID/Password)
+            alert(`ERROR: ${response.message}`);
         }
+    }
+
+    function onApprovalFailure(error) {
+        alert(`AN ERROR OCCURRED DURING APPROVAL. PLEASE CHECK GOOGLE SCRIPT DEPLOYMENT. ERROR: ${error.message}`);
     }
 
 </script>

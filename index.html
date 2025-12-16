@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KHANAGO TRAVEL EXPENSE TRACKER</title>
+    <style>
+        /* CSS for KHANAGO Branding and Layout */
+        @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;700&display=swap'); /* Importing Calibri-like font if not locally available */
+        
+        :root {
+            --khanago-orange: #FF8C00;
+            --text-color: #333;
+            --bg-color: #f4f4f4;
+            --pending-red: #d9534f;
+            --approved-green: #5cb85c;
+        }
+
+        body {
+            font-family: 'Calibri', Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            color: var(--khanago-orange);
+            margin-bottom: 30px;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        input[type="date"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1em;
+            text-transform: uppercase;
+            font-family: 'Calibri', Arial, sans-serif;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--khanago-orange);
+            outline: none;
+        }
+
+        .result-box {
+            background-color: var(--khanago-orange);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .status-box {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        #statusDisplay.pending {
+            background-color: #f2dede;
+            color: var(--pending-red);
+            border: 1px solid var(--pending-red);
+        }
+        
+        #statusDisplay.approved {
+            background-color: #d9edf7;
+            color: var(--approved-green);
+            border: 1px solid var(--approved-green);
+        }
+        
+        .approve-btn {
+            background-color: var(--approved-green);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            margin-top: 20px;
+            width: 100%;
+            text-transform: uppercase;
+            font-family: 'Calibri', Arial, sans-serif;
+        }
+
+        /* --- MODAL LOGIN BOX CSS --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; 
+            padding: 25px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 300px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .modal-content input {
+            margin-bottom: 15px;
+        }
+
+        .modal-content button {
+            background-color: var(--khanago-orange);
+            padding: 10px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>KHANAGO TRAVEL EXPENSE TRACKER</h1>
+
+    <div class="form-group">
+        <label for="expenseDate">DATE</label>
+        <input type="date" id="expenseDate" required>
+    </div>
+
+    <div class="form-group">
+        <label for="employeeName">EMPLOYEE NAME</label>
+        <select id="employeeName" required>
+            <option value="SANDEEP GOND" selected>SANDEEP GOND</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="kmTravelled">KM TRAVELLED TODAY</label>
+        <input type="number" id="kmTravelled" min="0" value="0" step="0.1" oninput="calculateAmount()" required>
+    </div>
+
+    <div class="form-group">
+        <label for="ratePerKm">RATE PER KM</label>
+        <input type="number" id="ratePerKm" min="0" value="3" step="0.01" oninput="calculateAmount()" required>
+        <div id="rateDisplay">DEFAULT RATE IS ₹3 PER KM</div>
+    </div>
+    
+    <div id="finalAmount" class="result-box">
+        TOTAL AMOUNT: ₹0.00
+    </div>
+    
+    <div id="statusDisplay" class="status-box pending">
+        STATUS: PENDING
+    </div>
+
+    <button class="approve-btn" onclick="openApprovalModal()">APPROVE NOW</button>
+
+</div>
+
+
+<div id="approvalModal" class="modal">
+  <div class="modal-content">
+    <h2>MANAGER LOGIN</h2>
+    <label for="loginId">ID (PHONE NUMBER)</label>
+    <input type="text" id="loginId" placeholder="8003270534">
+    
+    <label for="loginPassword">PASSWORD</label>
+    <input type="password" id="loginPassword" placeholder="******">
+    
+    <button onclick="attemptApprovalLogin()">LOGIN & APPROVE</button>
+  </div>
+</div>
+
+
+<script>
+    // --- JS for Calculation and Submission ---
+    
+    const APPROVER_ID = '8003270534';
+    const APPROVER_PASS = '8003270534';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set today's date as default
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('expenseDate').value = today;
+        calculateAmount();
+    });
+
+    function calculateAmount() {
+        const km = parseFloat(document.getElementById('kmTravelled').value) || 0;
+        const rate = parseFloat(document.getElementById('ratePerKm').value) || 3;
+        
+        const finalAmount = km * rate;
+        
+        const resultBox = document.getElementById('finalAmount');
+        
+        resultBox.innerHTML = `TOTAL AMOUNT: ₹${finalAmount.toFixed(2)}`;
+        
+        // Show the box only if km travelled is greater than 0
+        resultBox.style.display = km > 0 ? 'block' : 'none';
+    }
+    
+    // --- JS for Approval Logic ---
+    
+    function openApprovalModal() {
+        document.getElementById('approvalModal').style.display = 'block';
+    }
+
+    // Close the modal if user clicks outside of it
+    window.onclick = function(event) {
+        const modal = document.getElementById('approvalModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+    
+    function attemptApprovalLogin() {
+        const id = document.getElementById('loginId').value.trim();
+        const pass = document.getElementById('loginPassword').value.trim();
+        const statusBox = document.getElementById('statusDisplay');
+        const modal = document.getElementById('approvalModal');
+        
+        if (id === APPROVER_ID && pass === APPROVER_PASS) {
+            // SUCCESSFUL LOGIN
+            
+            // This is where you would normally send the status update to Google Sheets (backend)
+            
+            statusBox.innerHTML = 'STATUS: APPROVED BY RAJDEEP RAO';
+            statusBox.classList.remove('pending');
+            statusBox.classList.add('approved');
+            
+            // Reset modal inputs and close
+            document.getElementById('loginId').value = '';
+            document.getElementById('loginPassword').value = '';
+            modal.style.display = "none";
+            
+            alert('EXPENSE SUCCESSFULLY APPROVED BY RAJDEEP RAO!');
+        } else {
+            // FAILED LOGIN
+            alert('LOGIN FAILED. INCORRECT ID or PASSWORD.');
+            // Clear password field only
+            document.getElementById('loginPassword').value = '';
+        }
+    }
+
+</script>
+
+</body>
+</html>
